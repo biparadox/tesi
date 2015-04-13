@@ -95,6 +95,7 @@ main_v1_1( void )
 	TSS_HPOLICY	hSrkPolicy;
 	BYTE		*prgbDataToUnBind;
 	TSS_HENCDATA	hEncData;
+	TSS_HENCDATA	hDecData;
 	UINT32		pulDataLength;
 	BYTE		rgbDataToBind[DATA_SIZE], *rgbEncryptedData = NULL;
 	UINT32		ulDataLength = DATA_SIZE, ulEncryptedDataLength = 0;
@@ -238,10 +239,32 @@ main_v1_1( void )
 		exit( result );
 	}
 
+	result = Tspi_Context_CreateObject( hContext,
+						TSS_OBJECT_TYPE_ENCDATA,
+						TSS_ENCDATA_BIND, &hDecData );
+	if ( result != TSS_SUCCESS )
+	{
+		print_error( "Tspi_Context_CreateObject (hDecData)", result );
+		Tspi_Context_FreeMemory( hContext, NULL );
+		Tspi_Context_Close( hContext );
+		exit( result );
+	}
+
+	result = Tspi_SetAttribData(hDecData, TSS_TSPATTRIB_ENCDATA_BLOB,
+					TSS_TSPATTRIB_ENCDATABLOB_BLOB,
+					ulEncryptedDataLength, rgbEncryptedData);
+	if ( result != TSS_SUCCESS )
+	{
+		print_error( "Tspi_GetAttribData", result );
+		Tspi_Context_FreeMemory( hContext, NULL );
+		Tspi_Context_Close( hContext );
+		exit( result );
+	}
+
 	printf("Data after encrypting:\n");
 	print_hex(rgbEncryptedData, ulEncryptedDataLength);
 
-	result = Tspi_Data_Unbind( hEncData, hKey, &pulDataLength,
+	result = Tspi_Data_Unbind( hDecData, hKey, &pulDataLength,
 					&prgbDataToUnBind );
 	if ( result != TSS_SUCCESS )
 	{
