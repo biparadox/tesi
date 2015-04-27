@@ -50,6 +50,11 @@ static struct struct_elem_attr req_info_desc[]=
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
+int get_local_uuid(char * uuid)
+{
+	memset(uuid,'A',DIGEST_SIZE*2);
+}
+
 int main(int argc, char ** argv){
 
 	char		*nameOfFunction = "TESI_AIK_GenerateReq";

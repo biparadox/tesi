@@ -912,6 +912,16 @@ TSS_RESULT TESI_Local_CreateSignKey(TSS_HKEY * hKey,TSS_HKEY hWrapKey,char * pwd
 	    TSS_KEY_NOT_MIGRATABLE;
 	return Local_CreateKeyWithFlags(hKey,hWrapKey,initFlags,pwdw,pwdk);
 }
+TSS_RESULT TESI_Local_CreateBindKey(TSS_HKEY * hKey,TSS_HKEY hWrapKey,char * pwdw,char * pwdk)
+{
+	TSS_FLAG initFlags;
+
+	initFlags = TSS_KEY_TYPE_BIND | TSS_KEY_SIZE_2048  |
+				TSS_KEY_VOLATILE | TSS_KEY_NO_AUTHORIZATION |
+				TSS_KEY_NOT_MIGRATABLE;
+	return Local_CreateKeyWithFlags(hKey,hWrapKey,initFlags,pwdw,pwdk);
+}
+
 
 TSS_RESULT TESI_Local_CreateStorageKey(TSS_HKEY * hKey,TSS_HKEY hWrapKey,char * pwdw,char * pwdk)
 {
@@ -2931,4 +2941,149 @@ TSS_RESULT TESI_AIK_Activate(TSS_HKEY hAIK, char * req, TESI_SIGN_DATA * signdat
 		return -EINVAL;
 	
 	return TSS_SUCCESS;
+}
+
+TSS_RESULT TESI_Local_Bind(char * plainname, TSS_HKEY hKey, char * ciphername)
+{
+	TSS_HENCDATA hEncData;
+	TSS_RESULT result;
+	FILE * file;
+	FILE* oFile;
+	UINT32 datalen;
+	void* rgbExternalData;
+	void* rgbEncryptedData = NULL;
+	UINT32	ulEncryptedDataLength = 0;
+
+ 	// read file text
+	file = fopen(plainname,"rb");
+  	if (file == NULL)
+   	{
+   	   printf("Unable to read plain file %s.\n",plainname);
+   	   return TSS_E_KEY_NOT_LOADED;
+  	 }
+	 fseek(file,0,SEEK_END);
+	 datalen=ftell(file);
+	 fseek(file,0,SEEK_SET);
+	 
+	rgbExternalData=(BYTE *)malloc(datalen);
+	if(rgbExternalData == NULL)
+		return TSS_E_OUTOFMEMORY;
+
+   	 result = fread((rgbExternalData),datalen,1,file);
+  	 if (result != 1)
+  	 {
+			fclose(file);
+			free(rgbExternalData);
+			printf("I/O Error reading plain file\n");
+			return TSS_E_OUTOFMEMORY;
+     	 }
+
+	 fclose(file);
+	
+	result = Tspi_Context_CreateObject( hContext,
+						TSS_OBJECT_TYPE_ENCDATA,
+						TSS_ENCDATA_BIND, &hEncData );
+						
+	if ( result != TSS_SUCCESS )
+	{
+		free(rgbExternalData);
+		print_error( "Tspi_Context_CreateObject (hEncData)", result );
+		return result;
+	}
+
+		// Data Bind
+	result = Tspi_Data_Bind( hEncData, hKey, datalen, rgbExternalData );
+	if ( result != TSS_SUCCESS )
+	{
+		free(rgbExternalData);
+		print_error("Tspi_Data_Bind", result);
+		return result;
+	}
+	free(rgbExternalData);
+	//Get data
+	result = Tspi_GetAttribData(hEncData, TSS_TSPATTRIB_ENCDATA_BLOB,
+					TSS_TSPATTRIB_ENCDATABLOB_BLOB,
+					&ulEncryptedDataLength, &rgbEncryptedData);
+	if ( result != TSS_SUCCESS )
+	{
+		print_error( "Tspi_GetAttribData", result );
+		return result;
+	}
+	
+	printf("Data after encrypting:\n");
+	print_hex(rgbEncryptedData, ulEncryptedDataLength);
+	
+	oFile=fopen(ciphername,"wb");
+	fwrite(rgbEncryptedData,ulEncryptedDataLength,1,oFile);
+	fclose(oFile);
+}
+
+TSS_RESULT TESI_Local_UnBind(char * ciphername, TSS_HKEY hKey, char * plainname)
+{
+	TSS_HENCDATA hEncData;
+	TSS_RESULT result;
+	FILE * file;
+	FILE* oFile;
+	UINT32 datalen;
+	void* rgbExternalData;
+	void* rgbEncryptedData = NULL;
+	UINT32	ulEncryptedDataLength = 0;
+
+ 	// read file text
+	file = fopen(ciphername,"rb");
+  	if (file == NULL)
+   	{
+   	   printf("Unable to read cinpher file %s.\n",ciphername);
+   	   return TSS_E_KEY_NOT_LOADED;
+  	}
+	 fseek(file,0,SEEK_END);
+	 datalen=ftell(file);
+	 fseek(file,0,SEEK_SET);
+	 
+	rgbExternalData=(BYTE *)malloc(datalen);
+	if(rgbExternalData == NULL)
+		return TSS_E_OUTOFMEMORY;
+
+   	 result = fread((rgbExternalData),datalen,1,file);
+  	 if (result != 1)
+   	 {
+		 fclose(file);
+		 free(rgbExternalData);
+	      printf("I/O Error reading data cipher file\n");
+ 	      return TSS_E_OUTOFMEMORY;
+     	 }
+
+	 fclose(file);
+	
+	result = Tspi_Context_CreateObject( hContext,
+						TSS_OBJECT_TYPE_ENCDATA,
+						TSS_ENCDATA_BIND, &hEncData );
+	if ( result != TSS_SUCCESS )
+	{
+		free(rgbExternalData);
+		print_error( "Tspi_Context_CreateObject (hEncData)", result );
+		return result;
+	}
+	
+	//Get data
+	result = Tspi_SetAttribData(hEncData, TSS_TSPATTRIB_ENCDATA_BLOB,
+					TSS_TSPATTRIB_ENCDATABLOB_BLOB,
+					datalen, rgbExternalData);
+	free(rgbExternalData);
+	if ( result != TSS_SUCCESS )
+	{
+		print_error( "Tspi_SetAttribData", result );
+		return result;
+	}
+	
+	//Unbind data
+	result = Tspi_Data_Unbind( hEncData, hKey, &ulEncryptedDataLength,
+					&rgbEncryptedData );
+	
+	printf("Data after decrypting:\n");
+	print_hex(rgbEncryptedData, ulEncryptedDataLength);
+	
+	oFile=fopen(plainname,"wb");
+	fwrite(rgbEncryptedData,ulEncryptedDataLength,1,oFile);
+	fclose(oFile);
 }
