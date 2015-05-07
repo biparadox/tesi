@@ -3017,6 +3017,45 @@ TSS_RESULT TESI_Local_Bind(char * plainname, TSS_HKEY hKey, char * ciphername)
 	fwrite(rgbEncryptedData,ulEncryptedDataLength,1,oFile);
 	fclose(oFile);
 }
+TSS_RESULT TESI_Local_BindBuffer(void * inbuffer,int inlength, TSS_HKEY hKey, void** outbuffer, int * outlength)
+{
+	TSS_HENCDATA hEncData;
+	TSS_RESULT result;
+	UINT32 datalen;
+	void* rgbExternalData;
+	void* rgbEncryptedData = NULL;
+	UINT32	ulEncryptedDataLength = 0;
+
+	result = Tspi_Context_CreateObject( hContext,
+						TSS_OBJECT_TYPE_ENCDATA,
+						TSS_ENCDATA_BIND, &hEncData );
+						
+	if ( result != TSS_SUCCESS )
+	{
+		free(rgbExternalData);
+		print_error( "Tspi_Context_CreateObject (hEncData)", result );
+		return result;
+	}
+
+		// Data Bind
+	result = Tspi_Data_Bind( hEncData, hKey, inlength,inbuffer );
+	if ( result != TSS_SUCCESS )
+	{
+		print_error("TESI_Local_BindBuffer", result);
+		return result;
+	}
+	//Get data
+	result = Tspi_GetAttribData(hEncData, TSS_TSPATTRIB_ENCDATA_BLOB,
+					TSS_TSPATTRIB_ENCDATABLOB_BLOB,
+					outlength, &outbuffer);
+	if ( result != TSS_SUCCESS )
+	{
+		print_error( "Tspi_GetAttribData", result );
+		return result;
+	}
+	return result;
+}
+
 
 TSS_RESULT TESI_Local_UnBind(char * ciphername, TSS_HKEY hKey, char * plainname)
 {
