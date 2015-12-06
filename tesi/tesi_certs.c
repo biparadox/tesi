@@ -3132,7 +3132,6 @@ TSS_RESULT TESI_Local_UnBindBuffer(void * inbuffer,int inlength, TSS_HKEY hKey, 
 	TSS_HENCDATA hEncData;
 	TSS_RESULT result;
 	UINT32 datalen;
-	void* rgbExternalData;
 	void* rgbEncryptedData = NULL;
 	UINT32	ulEncryptedDataLength = 0;
 
@@ -3142,7 +3141,6 @@ TSS_RESULT TESI_Local_UnBindBuffer(void * inbuffer,int inlength, TSS_HKEY hKey, 
 						
 	if ( result != TSS_SUCCESS )
 	{
-		free(rgbExternalData);
 		print_error( "Tspi_Context_CreateObject (hEncData)", result );
 		return result;
 	}
@@ -3150,7 +3148,6 @@ TSS_RESULT TESI_Local_UnBindBuffer(void * inbuffer,int inlength, TSS_HKEY hKey, 
 	result = Tspi_SetAttribData(hEncData, TSS_TSPATTRIB_ENCDATA_BLOB,
 					TSS_TSPATTRIB_ENCDATABLOB_BLOB,
 					inlength, inbuffer);
-	free(rgbExternalData);
 	if ( result != TSS_SUCCESS )
 	{
 		print_error( "Tspi_SetAttribData", result );
