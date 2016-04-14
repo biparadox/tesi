@@ -1286,7 +1286,8 @@ TSS_RESULT ReadPrivKey(void ** rsa_data,char * keyname,char * pass_phrase)
       return TSS_E_KEY_NOT_LOADED;
    }
 
-   *rsa=PEM_read_bio_RSAPrivateKey(bio,&tempRSA,NULL,pass_phrase);
+//   *rsa=PEM_read_bio_RSAPrivateKey(bio,&tempRSA,NULL,pass_phrase);
+   *rsa=PEM_read_bio_RSAPrivateKey(bio,NULL,NULL,pass_phrase);
    if (*rsa == NULL)
    {
         printf("I/O Error read private key file\n");
@@ -1327,7 +1328,11 @@ TSS_RESULT WritePrivKey(void * rsa_data,char * keyname,char * pass_phrase)
       printf("Unable to create private key file\n");
       return TSS_E_KEY_NOT_LOADED;
    }
-   ret = PEM_write_bio_RSAPrivateKey(bio,rsa,EVP_aes_128_ecb(),pass_phrase,strlen(pass_phrase),NULL,NULL);
+
+   if(pass_phrase!=NULL)	
+   	ret = PEM_write_bio_RSAPrivateKey(bio,rsa,EVP_aes_128_cbc(),pass_phrase,strlen(pass_phrase),NULL,NULL);
+   else
+   	ret = PEM_write_bio_RSAPrivateKey(bio,rsa,EVP_aes_128_cbc(),NULL,0,NULL,NULL);
    if (ret < 0)
    {
         printf("I/O Error write private key file\n");
