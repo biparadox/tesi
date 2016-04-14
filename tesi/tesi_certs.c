@@ -1266,6 +1266,7 @@ TSS_RESULT ReadPrivKey(void ** rsa_data,char * keyname,char * pass_phrase)
    unsigned char n[2048];
    int size_n;
    char filename[256];             /* file name string of key file */
+   char errstring[256];             /* file name string of key file */
    TSS_RESULT result;
    RSA ** rsa=(RSA **)rsa_data;	
 
@@ -1284,14 +1285,17 @@ TSS_RESULT ReadPrivKey(void ** rsa_data,char * keyname,char * pass_phrase)
       printf("Unable to create public key file\n");
       return TSS_E_KEY_NOT_LOADED;
    }
-   tempRSA = PEM_read_bio_RSAPrivateKey(bio,NULL,NULL,pass_phrase);
-   if (tempRSA == NULL)
+
+   *rsa=PEM_read_bio_RSAPrivateKey(bio,&tempRSA,NULL,pass_phrase);
+   if (*rsa == NULL)
    {
         printf("I/O Error read private key file\n");
+	ERR_error_string(ERR_get_error(),errstring);
+        printf("openssl error:%s\n",errstring);
         return TSS_E_KEY_NOT_LOADED;
    }
    BIO_free(bio);
-   *rsa=tempRSA;
+//   *rsa=tempRSA;
    return TSS_SUCCESS;
 }
 
