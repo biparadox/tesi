@@ -233,6 +233,20 @@ TSS_RESULT ReadValidation(TSS_VALIDATION * valData,char * name)
 	 return TSS_SUCCESS;
 }
 
+TSS_RESULT TESI_Local_GetRandom(void * buf,int num)
+{
+   	TSS_RESULT result;
+	BYTE * temp_buf;
+	result = Tspi_TPM_GetRandom( hTPM, num, &temp_buf);
+   	if (result != TSS_SUCCESS) 
+		return result;
+	memcpy(buf,temp_buf,num);
+	result = Tspi_Context_FreeMemory( hContext, temp_buf);
+   	if (result != TSS_SUCCESS) 
+		return result;
+	return TSS_SUCCESS;	
+}
+
 TSS_RESULT TESI_Local_LoadKey(TSS_HKEY hKey,TSS_HKEY hWrapKey, char * pwdk)
 {
    TSS_RESULT result;
@@ -1156,13 +1170,14 @@ TSS_RESULT TSS_setpubkey(TSS_HKEY * hPubKey,UINT32 size_n, BYTE *n)
 	return TSS_SUCCESS;
  }
 
-TSS_RESULT ReadPubKey(RSA ** rsa,char * keyname)
+TSS_RESULT ReadPubKey(void ** rsa_data,char * keyname)
 {
    FILE *keyfile;                  /* output file for public key */
    EVP_PKEY *pkey = NULL;          /* OpenSSL public key */
    char filename[256];             /* file name string of key file */
    TSS_RESULT result;
    RSA * tempRSA;
+   RSA ** rsa=(RSA **)rsa_data;	
 
    tempRSA = RSA_new();
 
@@ -1200,12 +1215,13 @@ TSS_RESULT ReadPubKey(RSA ** rsa,char * keyname)
    return TSS_SUCCESS;
 }
 
-TSS_RESULT WritePubKey(RSA * rsa,char * keyname)
+TSS_RESULT WritePubKey(void * rsa_data,char * keyname)
 {
    FILE *keyfile;                  /* output file for public key */
    EVP_PKEY *pkey = NULL;          /* OpenSSL public key */
    char filename[256];             /* file name string of key file */
    TSS_RESULT result;
+   RSA * rsa=(RSA *)rsa_data;	
 
    if (rsa == NULL)
       {
@@ -1241,7 +1257,7 @@ TSS_RESULT WritePubKey(RSA * rsa,char * keyname)
 
 }
 
-TSS_RESULT ReadPrivKey(RSA ** rsa,char * keyname,char * pass_phrase)
+TSS_RESULT ReadPrivKey(void ** rsa_data,char * keyname,char * pass_phrase)
 {
    X509 *x=NULL;
    BIO *bio;
@@ -1251,6 +1267,7 @@ TSS_RESULT ReadPrivKey(RSA ** rsa,char * keyname,char * pass_phrase)
    int size_n;
    char filename[256];             /* file name string of key file */
    TSS_RESULT result;
+   RSA ** rsa=(RSA **)rsa_data;	
 
    RSA * tempRSA;
    tempRSA = RSA_new();
@@ -1275,6 +1292,44 @@ TSS_RESULT ReadPrivKey(RSA ** rsa,char * keyname,char * pass_phrase)
    }
    BIO_free(bio);
    *rsa=tempRSA;
+   return TSS_SUCCESS;
+}
+
+TSS_RESULT WritePrivKey(void * rsa_data,char * keyname,char * pass_phrase)
+{
+   X509 *x=NULL;
+   BIO *bio;
+   ASN1_BIT_STRING * CAString;
+   EVP_PKEY * CAKey;
+   unsigned char n[2048];
+   int size_n;
+   char filename[256];             /* file name string of key file */
+   TSS_RESULT result;
+   int ret;
+   RSA * rsa=(RSA *)rsa_data;	
+
+   RSA * tempRSA;
+   tempRSA = RSA_new();
+
+   if (rsa == NULL)
+   {
+      printf("Error from WritePrivKey\n");
+      return TSS_E_KEY_NOT_LOADED;
+   }
+   sprintf(filename,"%s.key",keyname);
+   bio=BIO_new_file(filename,"wb");
+   if (bio == NULL)
+   {
+      printf("Unable to create private key file\n");
+      return TSS_E_KEY_NOT_LOADED;
+   }
+   ret = PEM_write_bio_RSAPrivateKey(bio,rsa,EVP_aes_128_ecb(),pass_phrase,strlen(pass_phrase),NULL,NULL);
+   if (ret < 0)
+   {
+        printf("I/O Error write private key file\n");
+        return TSS_E_KEY_NOT_LOADED;
+   }
+   BIO_free(bio);
    return TSS_SUCCESS;
 }
 
