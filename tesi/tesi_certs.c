@@ -18,44 +18,13 @@
 #include <openssl/pem.h>
 #include <openssl/sha.h>
 #include <openssl/rsa.h>
-
+#include "tesi_struct_desc.h"
 
 static TSS_HCONTEXT hContext;
 static TSS_HTPM hTPM;
 static TSS_HKEY hSRK;
 TCPA_ALGORITHM_ID symAlg = TCPA_ALG_AES;
 TSS_ALGORITHM_ID tssSymAlg = TSS_ALG_AES;
-
-
-
-static struct struct_elem_attr tesi_sign_data_desc[] = 
-{
-	{"datalen",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"data",OS210_TYPE_DEFINE,sizeof(BYTE),"datalen"},
-	{"signlen",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"sign",OS210_TYPE_DEFINE,sizeof(BYTE),"signlen"},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-static struct struct_elem_attr tpm_key_parms_desc[] = 
-{
-	{"algorithmID",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"encScheme",TPM_TYPE_UINT16,sizeof(UINT16),NULL},
-	{"sigScheme",TPM_TYPE_UINT16,sizeof(UINT16),NULL},
-	{"parmSize",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"parms",OS210_TYPE_DEFINE,1,"parmSize"},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-static struct struct_elem_attr tpm_identity_req_desc[] = 
-{
-	{"asymBlobSize",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"symBlobSize",TPM_TYPE_UINT32,sizeof(UINT32),NULL},
-	{"asymAlgorithm",OS210_TYPE_ORGCHAIN,0,tpm_key_parms_desc},
-	{"symAlgorithm",OS210_TYPE_ORGCHAIN,0,tpm_key_parms_desc},
-	{"asymBlob",OS210_TYPE_DEFINE,1,"asymBlobSize"},
-	{"symBlob",OS210_TYPE_DEFINE,1,"symBlobSize"},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
 
 char * tss_err_string(TSS_RESULT result)
 {
@@ -597,6 +566,7 @@ TSS_RESULT TESI_Local_GetPubKeyFromCA(TSS_HKEY * hCAKey,char * name)
 
 	BIO_free(b);
 	CAPubKey=X509_get_pubkey(x);
+	long version=X509_get_version(x);
 	X509_free(x);
 	rsa=EVP_PKEY_get1_RSA(CAPubKey);
 
@@ -2493,6 +2463,78 @@ int TESI_AIK_VerifySignData(TESI_SIGN_DATA * signdata,char *name)
 	RSA_free(rsa_pub);
 	return 0;
 	
+}
+
+
+
+int WriteSignDataToFile(void * data,char * name)
+{
+	char filename[128]; 
+	TESI_SIGN_DATA * sign_data = (TESI_SIGN_DATA *)data;
+	int namelen;
+	int fd;
+	void * signdata_template;
+	BYTE buffer[4096];
+	int ret;
+	int signdatalen;
+	namelen=strlen(name);
+	if(namelen>120)
+		return -EINVAL;
+	memcpy(filename,name,namelen);
+	memcpy(filename+namelen,".sda",5);
+	
+	fd=open(filename,O_CREAT|O_WRONLY|O_TRUNC,0666);	
+	if(fd<0)
+		return -EIO;
+		
+	signdata_template = create_struct_template(&tesi_sign_data_desc);
+	if(signdata_template==NULL)
+		return -EINVAL;
+	signdatalen=struct_2_blob(sign_data,buffer,signdata_template);
+	if(signdatalen<0)
+		return signdatalen;
+	ret=write(fd,buffer,signdatalen);
+	if(ret!=signdatalen)
+		return -EIO;
+	close(fd);
+	return signdatalen;	
+}
+
+int ReadSignDataFromFile(void * data,char * name)
+{
+	int ret;
+	void * signdata_template;
+	signdata_template=create_struct_template(&tesi_sign_data_desc);
+	int fd;
+	char filename[128];
+	int retval;
+	int signdatalen;
+	struct stat file_stat;
+
+	sprintf(filename,"%s.sda",name);
+	fd=open(filename,O_RDONLY);
+	if(fd<=0)
+		return -EIO;
+	ret = fstat(fd,&file_stat);
+	if(ret<0)
+	{
+		return -EIO;
+	}
+
+	signdatalen=file_stat.st_size;
+	char *buffer;
+	buffer=malloc(signdatalen);
+	if(buffer==NULL)
+		return -ENOMEM;
+	retval=read(fd,buffer,signdatalen);
+	if(retval!=signdatalen)
+		return -EIO;
+	retval=blob_2_struct(buffer,data,signdata_template);
+	if(retval<0)
+		return -EINVAL;
+	close(fd);
+	free(buffer);
+	return retval;
 }
 
 TSS_RESULT
