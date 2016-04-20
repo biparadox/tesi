@@ -2,8 +2,10 @@ FLAGS= -g -o
 CFLAGS= -g -c -DUSER_MODE 
 CC=gcc
 CCP=g++
+TESI_PROC=TESI_test TESI_getpubek TESI_init TESI_bind_genkey TESI_bind_binddata TESI_bind_unbinddata TESI_clear TESI_AIK_CASign TESI_AIK_GenerateReq TESI_AIK_Activate 
+Tspi_PROC=Tspi_Data_Unbind05 Tspi_Key_CertifyKey01
 
-main: TESI_test  TESI_getpubek TESI_init TESI_bind_genkey TESI_bind_binddata TESI_bind_unbinddata TESI_clear TESI_AIK_CASign TESI_AIK_GenerateReq TESI_AIK_Activate Tspi_Data_Unbind05
+main: $(TESI_PROC) $(Tspi_PROC)
 TESI_test: TESI_test.c 
 	$(CC) $(FLAGS) TESI_test TESI_test.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
 TESI_getpubek: TESI_getpubek.c 
@@ -28,5 +30,7 @@ TESI_AIK_Activate: TESI_AIK_Activate.c
 	$(CC) $(FLAGS) TESI_AIK_Activate TESI_AIK_Activate.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
 Tspi_Data_Unbind05: Tspi_Data_Unbind05.c 
 	$(CC) $(FLAGS) Tspi_Data_Unbind05 Tspi_Data_Unbind05.c ../tesi/common.o -L/usr/local/lib -L../lib -ltspi -lcrypto -lcrypto_func
+Tspi_Key_CertifyKey01: Tspi_Key_CertifyKey01.c 
+	$(CC) $(FLAGS) Tspi_Key_CertifyKey01 Tspi_Key_CertifyKey01.c ../tesi/common.o -L/usr/local/lib -L../lib -ltspi -lcrypto -lcrypto_func
 clean:
 	rm -f TESI_test TESI_init TESI_clear TESI_bind TESI_bind_genkey TESI_bind_binddata TESI_bind_unbinddata TESI_AIK_Activate TESI_AIK_CASign TESI_AIK_GenerateReq *~ *.o *.a
