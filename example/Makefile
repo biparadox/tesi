@@ -2,7 +2,7 @@ FLAGS= -g -o
 CFLAGS= -g -c -DUSER_MODE 
 CC=gcc
 CCP=g++
-TESI_PROC=TESI_test TESI_getpubek TESI_init TESI_bind_genkey TESI_bind_binddata TESI_bind_unbinddata TESI_clear TESI_AIK_CASign TESI_AIK_GenerateReq TESI_AIK_Activate 
+TESI_PROC=TESI_test TESI_getpubek TESI_init TESI_bind_genkey TESI_bind_binddata TESI_bind_unbinddata TESI_bind_certifykey TESI_clear TESI_AIK_CASign TESI_AIK_GenerateReq TESI_AIK_Activate 
 Tspi_PROC=Tspi_Data_Unbind05 Tspi_Key_CertifyKey01
 
 main: $(TESI_PROC) $(Tspi_PROC)
@@ -16,6 +16,8 @@ TESI_bind: TESI_bind.c
 	$(CC) $(FLAGS) TESI_bind TESI_bind.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
 TESI_bind_genkey: TESI_bind_genkey.c 
 	$(CC) $(FLAGS) TESI_bind_genkey TESI_bind_genkey.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
+TESI_bind_certifykey: TESI_bind_certifykey.c 
+	$(CC) $(FLAGS) TESI_bind_certifykey TESI_bind_certifykey.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
 TESI_bind_binddata: TESI_bind_binddata.c 
 	$(CC) $(FLAGS) TESI_bind_binddata TESI_bind_binddata.c -L/usr/local/lib -L../lib -ltesi -ltspi -lcrypto -lstruct -lcrypto_func
 TESI_bind_unbinddata: TESI_bind_unbinddata.c 

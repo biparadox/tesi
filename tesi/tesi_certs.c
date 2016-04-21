@@ -47,7 +47,7 @@ void TSS_sha1(void *input, unsigned int len, unsigned char *output)
 TSS_RESULT WriteValidation(TSS_VALIDATION * valData,char * name)
 {
 	TSS_RESULT result;
-	char * filename;
+	char filename[128];
 	FILE * file;
 	UINT32 datalen;
 
