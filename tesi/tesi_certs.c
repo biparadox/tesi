@@ -20,9 +20,9 @@
 #include <openssl/rsa.h>
 #include "tesi_struct_desc.h"
 
-static TSS_HCONTEXT hContext;
-static TSS_HTPM hTPM;
-static TSS_HKEY hSRK;
+TSS_HCONTEXT hContext;
+TSS_HTPM hTPM;
+TSS_HKEY hSRK;
 TCPA_ALGORITHM_ID symAlg = TCPA_ALG_AES;
 TSS_ALGORITHM_ID tssSymAlg = TSS_ALG_AES;
 
@@ -120,7 +120,7 @@ TSS_RESULT WriteValidation(TSS_VALIDATION * valData,char * name)
 TSS_RESULT ReadValidation(TSS_VALIDATION * valData,char * name)
 {
 	TSS_RESULT result;
-	char * filename;
+	char filename[128];
 	FILE * file;
 	UINT32 datalen;
 

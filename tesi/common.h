@@ -105,6 +105,7 @@ TSS_RESULT TestSuite_UnloadBlob_ASYM_CA_CONTENTS(UINT16 *, BYTE *, TCPA_ASYM_CA_
 void TestSuite_LoadBlob_KEY_FLAGS(UINT16 *, BYTE *, TCPA_KEY_FLAGS *);
 void TestSuite_UnloadBlob_KEY_FLAGS(UINT16 *, BYTE *, TCPA_KEY_FLAGS *);
 TSS_RESULT TestSuite_UnloadBlob_IDENTITY_REQ(UINT16 *, BYTE *, TCPA_IDENTITY_REQ *);
+TSS_RESULT TestSuite_UnloadBlob_KEY_CERTIFY(UINT16 *, BYTE *, TPM_CERTIFY_INFO *);
 BYTE *TestSuite_Native_To_UNICODE(BYTE *, unsigned *);
 BYTE *TestSuite_UNICODE_To_Native(BYTE *, unsigned *);
 

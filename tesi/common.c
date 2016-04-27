@@ -1653,6 +1653,28 @@ TestSuite_UnloadBlob_IDENTITY_REQ(UINT16 *offset, BYTE *blob, TCPA_IDENTITY_REQ 
 	return TSS_SUCCESS;
 }
 
+TSS_RESULT
+TestSuite_UnloadBlob_KEY_CERTIFY(UINT16 *offset, BYTE *blob, TPM_CERTIFY_INFO *info)
+{
+	TestSuite_UnloadBlob_TCPA_VERSION(offset, &info->version, blob);
+	TestSuite_UnloadBlob_UINT16(offset, &info->keyUsage, blob);
+	TestSuite_UnloadBlob_UINT32(offset, &info->keyFlags, blob);
+	TestSuite_UnloadBlob_BYTE(offset, &info->authDataUsage, blob);
+	TestSuite_UnloadBlob_KEY_PARMS(offset, blob, &info->algorithmParms);
+	/* XXX */
+
+	memcpy(info->pubkeyDigest.digest,blob+*offset,sizeof(TPM_DIGEST));
+	*offset+=sizeof(TPM_DIGEST);
+	memcpy(info->data.nonce,blob+*offset,sizeof(TPM_NONCE));
+	*offset+=sizeof(TPM_NONCE);
+	TestSuite_UnloadBlob_BYTE(offset, &info->parentPCRStatus, blob);
+	TestSuite_UnloadBlob_UINT32(offset, &info->PCRInfoSize, blob);
+	info->PCRInfo = malloc(info->PCRInfoSize);
+	if(info->PCRInfo==NULL)
+		return TSS_E_OUTOFMEMORY;
+	memcpy(info->PCRInfo,blob+*offset,info->PCRInfoSize);
+	return TSS_SUCCESS;
+}
 #define EVP_SUCCESS 1
 
 void
