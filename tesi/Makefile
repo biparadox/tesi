@@ -12,7 +12,7 @@ common.o: common.c common.h
 	$(CC) $(CFLAGS) common.c
 tesi_certs.o: tesi_certs.c ../include/tesi.h
 	$(CC) $(CFLAGS) tesi_certs.c
-key_certify.o: key_certify.c ../include/tesi.h key_certify.h
+key_certify.o: key_certify.c ../include/tesi.h ../include/tesi_key.h
 	$(CC) $(CFLAGS) key_certify.c
 clean:
 	rm -f *~ *.o *.a

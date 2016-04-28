@@ -2,14 +2,16 @@
  */
 
 #include <stdio.h>
+#include <errno.h>
 #include <tss/tss_structs.h>
 #include "common.h"
 #include <tss/tpm.h>
+#include "../include/data_type.h"
 #include "../include/tesi.h"
 #include "../include/struct_deal.h"
 #include "../include/crypto_func.h"
-#include "key_certify.h"
-#include "key_certify_desc.h"
+#include "../include/tesi_key.h"
+#include "../include/tesi_key_desc.h"
 
 extern TSS_HCONTEXT hContext;
 extern TSS_HTPM hTPM;
@@ -145,4 +147,79 @@ void * create_key_certify_struct(void * key_cert_file,char * keyuuid,char * aiku
 	memcpy(key_cert->filename,key_cert_file,strlen(key_cert_file)+1);
 	return key_cert;
 
+}
+
+int create_blobkey_struct(struct vTPM_wrappedkey * blobkey,char * wrapkey_uuid,char * vtpm_uuid,char * keypass,char * keyfile)
+{
+
+	char digest[DIGEST_SIZE];
+	int  len;
+	char filename[256];
+
+	memset(blobkey,0,sizeof(struct vTPM_wrappedkey));
+	if((vtpm_uuid!=NULL)&&(!IS_ERR(vtpm_uuid)))
+		memcpy(blobkey->vtpm_uuid,vtpm_uuid,DIGEST_SIZE*2);
+
+	sprintf(filename,"%s.key",keyfile);
+	if(calculate_sm3(filename,digest)!=0)
+		return -EINVAL;
+	digest_to_uuid(digest,blobkey->uuid);
+	if(wrapkey_uuid==NULL)
+	{
+		blobkey->issrkwrapped=1;
+	}
+	else
+	{
+		len=strlen(wrapkey_uuid);
+		if(len>DIGEST_SIZE*2)
+			memcpy(blobkey->wrapkey_uuid,wrapkey_uuid,DIGEST_SIZE*2);
+		else
+			memcpy(blobkey->wrapkey_uuid,wrapkey_uuid,len);
+
+	}
+	blobkey->keypass=dup_str(keypass,0);
+	blobkey->key_filename=dup_str(keyfile,0);
+	return 0;
+}
+
+int create_pubkey_struct(struct vTPM_publickey * pubkey,char * privatekey_uuid,char * vtpm_uuid,char * keyfile)
+{
+
+	char digest[DIGEST_SIZE];
+	int  len;
+	char filename[256];
+
+	memset(pubkey,0,sizeof(struct vTPM_publickey));
+	if((vtpm_uuid!=NULL)&&(!IS_ERR(vtpm_uuid)))
+		memcpy(pubkey->vtpm_uuid,vtpm_uuid,DIGEST_SIZE*2);
+
+	sprintf(filename,"%s.pem",keyfile);
+	if(calculate_sm3(filename,digest)!=0)
+		return -EINVAL;
+	digest_to_uuid(digest,pubkey->uuid);
+	if(privatekey_uuid==NULL)
+	{
+		pubkey->ispubek=0;
+	}
+	else
+	{
+		len=strlen(privatekey_uuid);
+		if(len>DIGEST_SIZE*2)
+			memcpy(pubkey->privatekey_uuid,privatekey_uuid,DIGEST_SIZE*2);
+		else
+			memcpy(pubkey->privatekey_uuid,privatekey_uuid,len);
+
+	}
+	/*
+	if(keypass!=NULL)
+	{
+		len=strlen(publickey->keypass)+1;
+		publickey->keypass=kmalloc(len,GFP_KERNEL);
+		if(publickey->keypass==NULL)
+			return -ENOMEM;
+		memcpy(publickey->keypass,keypass,len);
+	}
+	*/
+	pubkey->key_filename=dup_str(keyfile,0);
+	return 0;
 }
