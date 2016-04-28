@@ -146,4 +146,3 @@ void * create_key_certify_struct(void * key_cert_file,char * keyuuid,char * aiku
 	return key_cert;
 
 }
-void * verify_key_certify_struct(void * key_cert_file,char * keyuuid,char * aikuuid);

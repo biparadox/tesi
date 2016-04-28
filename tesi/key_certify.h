@@ -19,6 +19,6 @@ typedef struct tagtpm_key_certify_info   // KEY CERTIFO
 }__attribute((packed)) KEY_CERT;
 
 void * create_key_certify_struct(void * key_cert_file,char * keyuuid,char * aikuuid);
-void * verify_key_certify_struct(void * key_cert_file,char * keyuuid,char * aikuuid);
+//void * verify_key_certify_struct(void * key_cert_file,char * keyuuid,char * aikuuid);
 
 #endif
