@@ -26,8 +26,10 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
-#include "../include/tesi.h"
+#include "../include/data_type.h"
 #include "../include/struct_deal.h"
+#include "../include/tesi.h"
+#include "../include/tesi_aik_struct.h"
 
 #define DIGEST_SIZE	32
 
@@ -35,7 +37,7 @@ int print_error(char * str, int result)
 {
 	printf("%s %s",str,tss_err_string(result));
 }
-
+/*
 struct aik_request_info{
 	char user_uuid[DIGEST_SIZE*2];
 	char * user_name;
@@ -49,7 +51,7 @@ static struct struct_elem_attr req_info_desc[]=
 	{"signpubkey_uuid",OS210_TYPE_STRING,DIGEST_SIZE*2,NULL},
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
-
+*/
 int get_local_uuid(char * uuid)
 {
 	memset(uuid,'A',DIGEST_SIZE*2);
@@ -65,7 +67,7 @@ int main(int argc, char ** argv){
 	BYTE		*labelString = "UserA";
 	UINT32		labelLen = strlen(labelString) + 1;
 
-	struct aik_request_info reqinfo;
+	struct aik_cert_info reqinfo;
 	char buffer[1024];
 	char digest[DIGEST_SIZE];
 	int blobsize=0;
@@ -90,12 +92,12 @@ int main(int argc, char ** argv){
 	
 	// fill the reqinfo struct
 	calculate_sm3("localsignkey.pem",digest);
-	digest_to_uuid(digest,reqinfo.signpubkey_uuid);
-	reqinfo.user_name=labelString;
-	get_local_uuid(reqinfo.user_uuid);
+	digest_to_uuid(digest,reqinfo.pubkey_uuid);
+	reqinfo.user_info.user_name=labelString;
+	get_local_uuid(reqinfo.machine_uuid);
 	
 	// create info blob
-	void * struct_template=create_struct_template(req_info_desc);
+	void * struct_template=create_struct_template(aik_cert_info_desc);
 	if(struct_template==NULL)
 		return -EINVAL;
 	blobsize=struct_2_blob(&reqinfo,buffer,struct_template);
